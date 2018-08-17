@@ -1,15 +1,19 @@
 from PIL import Image
+import rasterio
 import numpy as np
 from glob import glob
 import os
+import gdal
 
 data_dir = '/Users/mm_shane/Downloads/data/'
 file_list = sorted(os.listdir(data_dir))
-file_list = np.unique(file_list) # duplicate files??
+file_list = np.unique(file_list)  # duplicate files??
+
 
 def read_file(file):
     im = Image.open(file)
     return np.array(im)
+
 
 # since it's sorted, group the a and b together
 # http://book.pythontips.com/en/latest/enumerate.html
@@ -24,19 +28,21 @@ for counter, fname in enumerate(file_list):
         entiremonth = [afile, bfile]
         groups.append(entiremonth)
 
-def setBigNumsZero(arr):
-    for idx, i in enumerate(arr):
-        if i < -2.0e20:
-            arr[idx] = 0
-    return arr
+# def setBigNumsZero(arr):
+#     for idx, i in enumerate(arr):
+#         if i < -2.0e20:
+#             arr[idx] = -1
+#     return arr
 
 for x in groups:
     a_data = read_file(data_dir + x[0])
     b_data = read_file(data_dir + x[1])
-    # add all the datapoints and flatten to one array
-    combine = np.concatenate((a_data, b_data)).flatten()
+
+    combine = (a_data + b_data) / 2 # average the entire month
+
     # for whatever reason, there's huuuuge negative numbers in here, so i set them to zero
-    combine = setBigNumsZero(combine)
+    # combine = setBigNumsZero(combine)
+
     newname = x[0].replace("a.", "")
 
     # sanity check
@@ -45,399 +51,23 @@ for x in groups:
         print(x[0])
         print(x[1])
 
-    print(newname, "mean = ", combine.mean())
+    # doesn't work
+    # from: https://stackoverflow.com/questions/37648439/simplest-way-to-save-array-into-raster-file-in-python
+    dst_filename = "/Users/mm_shane/arcgis/tifavg/output/" + newname
+    x_pixels = combine.shape[0]  # number of pixels in x
+    y_pixels = combine.shape[1]  # number of pixels in y
+    driver = gdal.GetDriverByName('GTiff')
+    dataset = driver.Create(dst_filename, x_pixels, y_pixels, 1, gdal.GDT_Float32)
+    dataset.GetRasterBand(1).WriteArray(combine)
 
-# results!
-# geo00apr15n14-VI3g.tif mean =  0.59258
-# geo00aug15n14-VI3g.tif mean =  0.69948244
-# geo00dec15n16-VI3g.tif mean =  0.70446306
-# geo00feb15n14-VI3g.tif mean =  0.6860347
-# geo00jan15n14-VI3g.tif mean =  0.7309202
-# geo00jul15n14-VI3g.tif mean =  0.712729
-# geo00jun15n14-VI3g.tif mean =  0.60740757
-# geo00mar15n14-VI3g.tif mean =  0.6686679
-# geo00may15n14-VI3g.tif mean =  0.4900992
-# geo00nov15n16-VI3g.tif mean =  0.7221965
-# geo00oct15n14-VI3g.tif mean =  0.63120407
-# geo00sep15n14-VI3g.tif mean =  0.6482998
-# geo01apr15n16-VI3g.tif mean =  0.63081795
-# geo01aug15n16-VI3g.tif mean =  0.72251916
-# geo01dec15n16-VI3g.tif mean =  0.7183147
-# geo01feb15n16-VI3g.tif mean =  0.69349
-# geo01jan15n16-VI3g.tif mean =  0.7091969
-# geo01jul15n16-VI3g.tif mean =  0.72166127
-# geo01jun15n16-VI3g.tif mean =  0.67689854
-# geo01mar15n16-VI3g.tif mean =  0.6789276
-# geo01may15n16-VI3g.tif mean =  0.5855129
-# geo01nov15n16-VI3g.tif mean =  0.7467892
-# geo01oct15n16-VI3g.tif mean =  0.73878247
-# geo01sep15n16-VI3g.tif mean =  0.6432969
-# geo02apr15n16-VI3g.tif mean =  0.64196974
-# geo02aug15n16-VI3g.tif mean =  0.7182592
-# geo02dec15n16-VI3g.tif mean =  0.7464855
-# geo02feb15n16-VI3g.tif mean =  0.7062947
-# geo02jan15n16-VI3g.tif mean =  0.7316873
-# geo02jul15n16-VI3g.tif mean =  0.70672506
-# geo02jun15n16-VI3g.tif mean =  0.65897226
-# geo02mar15n16-VI3g.tif mean =  0.66767836
-# geo02may15n16-VI3g.tif mean =  0.5628927
-# geo02nov15n16-VI3g.tif mean =  0.7386649
-# geo02oct15n16-VI3g.tif mean =  0.74759144
-# geo02sep15n16-VI3g.tif mean =  0.6172769
-# geo03apr15n16-VI3g.tif mean =  0.6262769
-# geo03aug15n16-VI3g.tif mean =  0.7200012
-# geo03dec15n16-VI3g.tif mean =  0.7314677
-# geo03feb15n16-VI3g.tif mean =  0.7052492
-# geo03jan15n16-VI3g.tif mean =  0.69853306
-# geo03jul15n16-VI3g.tif mean =  0.6790688
-# geo03jun15n16-VI3g.tif mean =  0.65953004
-# geo03mar15n16-VI3g.tif mean =  0.6462537
-# geo03may15n16-VI3g.tif mean =  0.5470992
-# geo03nov15n16-VI3g.tif mean =  0.715958
-# geo03oct15n16-VI3g.tif mean =  0.7359916
-# geo03sep15n16-VI3g.tif mean =  0.71660024
-# geo04apr15n17-VI3g.tif mean =  0.65200776
-# geo04aug15n17-VI3g.tif mean =  0.7326951
-# geo04dec15n17-VI3g.tif mean =  0.7486437
-# geo04feb15n17-VI3g.tif mean =  0.70474404
-# geo04jan15n17-VI3g.tif mean =  0.69477427
-# geo04jul15n17-VI3g.tif mean =  0.70121574
-# geo04jun15n17-VI3g.tif mean =  0.66337305
-# geo04mar15n17-VI3g.tif mean =  0.6430512
-# geo04may15n17-VI3g.tif mean =  0.6003708
-# geo04nov15n17-VI3g.tif mean =  0.7713888
-# geo04oct15n17-VI3g.tif mean =  0.72812265
-# geo04sep15n17-VI3g.tif mean =  0.70250595
-# geo05apr15n17-VI3g.tif mean =  0.6107298
-# geo05aug15n17-VI3g.tif mean =  0.70622426
-# geo05dec15n17-VI3g.tif mean =  0.7172527
-# geo05feb15n17-VI3g.tif mean =  0.6957394
-# geo05jan15n17-VI3g.tif mean =  0.74226874
-# geo05jul15n17-VI3g.tif mean =  0.70359904
-# geo05jun15n17-VI3g.tif mean =  0.6608451
-# geo05mar15n17-VI3g.tif mean =  0.6433347
-# geo05may15n17-VI3g.tif mean =  0.606828
-# geo05nov15n17-VI3g.tif mean =  0.7416455
-# geo05oct15n17-VI3g.tif mean =  0.6982927
-# geo05sep15n17-VI3g.tif mean =  0.67691344
-# geo06apr15n17-VI3g.tif mean =  0.6547478
-# geo06aug15n17-VI3g.tif mean =  0.6972239
-# geo06dec15n17-VI3g.tif mean =  0.6858837
-# geo06feb15n17-VI3g.tif mean =  0.7140002
-# geo06jan15n17-VI3g.tif mean =  0.7260039
-# geo06jul15n17-VI3g.tif mean =  0.7125149
-# geo06jun15n17-VI3g.tif mean =  0.6507694
-# geo06mar15n17-VI3g.tif mean =  0.68487555
-# geo06may15n17-VI3g.tif mean =  0.5859102
-# geo06nov15n17-VI3g.tif mean =  0.73333716
-# geo06oct15n17-VI3g.tif mean =  0.74774206
-# geo06sep15n17-VI3g.tif mean =  0.6920412
-# geo07apr15n17-VI3g.tif mean =  0.6718017
-# geo07aug15n17-VI3g.tif mean =  0.7021441
-# geo07dec15n17-VI3g.tif mean =  0.7519288
-# geo07feb15n17-VI3g.tif mean =  0.72435856
-# geo07jan15n17-VI3g.tif mean =  0.69088244
-# geo07jul15n17-VI3g.tif mean =  0.7191825
-# geo07jun15n17-VI3g.tif mean =  0.63620305
-# geo07mar15n17-VI3g.tif mean =  0.69068795
-# geo07may15n17-VI3g.tif mean =  0.586421
-# geo07nov15n17-VI3g.tif mean =  0.7096941
-# geo07oct15n17-VI3g.tif mean =  0.7177212
-# geo07sep15n17-VI3g.tif mean =  0.70175326
-# geo08apr15n17-VI3g.tif mean =  0.68544185
-# geo08aug15n17-VI3g.tif mean =  0.7564598
-# geo08dec15n17-VI3g.tif mean =  0.72981673
-# geo08feb15n17-VI3g.tif mean =  0.6925555
-# geo08jan15n17-VI3g.tif mean =  0.7288073
-# geo08jul15n17-VI3g.tif mean =  0.69289494
-# geo08jun15n17-VI3g.tif mean =  0.652417
-# geo08mar15n17-VI3g.tif mean =  0.69249713
-# geo08may15n17-VI3g.tif mean =  0.59634733
-# geo08nov15n17-VI3g.tif mean =  0.7586939
-# geo08oct15n17-VI3g.tif mean =  0.65579283
-# geo08sep15n17-VI3g.tif mean =  0.65028447
-# geo09apr15n18-VI3g.tif mean =  0.5837855
-# geo09aug15n18-VI3g.tif mean =  0.7225208
-# geo09dec15n18-VI3g.tif mean =  0.7795192
-# geo09feb15n18-VI3g.tif mean =  0.6809245
-# geo09jan15n18-VI3g.tif mean =  0.711712
-# geo09jul15n18-VI3g.tif mean =  0.7191351
-# geo09jun15n18-VI3g.tif mean =  0.6916531
-# geo09mar15n18-VI3g.tif mean =  0.6840972
-# geo09may15n18-VI3g.tif mean =  0.59774405
-# geo09nov15n18-VI3g.tif mean =  0.7320747
-# geo09oct15n18-VI3g.tif mean =  0.772029
-# geo09sep15n18-VI3g.tif mean =  0.73853123
-# geo10apr15n18-VI3g.tif mean =  0.62993085
-# geo10aug15n18-VI3g.tif mean =  0.6775108
-# geo10dec15n18-VI3g.tif mean =  0.75199735
-# geo10feb15n18-VI3g.tif mean =  0.7004111
-# geo10jan15n18-VI3g.tif mean =  0.77082163
-# geo10jul15n18-VI3g.tif mean =  0.7039947
-# geo10jun15n18-VI3g.tif mean =  0.7084635
-# geo10mar15n18-VI3g.tif mean =  0.6829033
-# geo10may15n18-VI3g.tif mean =  0.61608934
-# geo10nov15n18-VI3g.tif mean =  0.7400183
-# geo10oct15n18-VI3g.tif mean =  0.7300981
-# geo10sep15n18-VI3g.tif mean =  0.68223596
-# geo11apr15n18-VI3g.tif mean =  0.6338849
-# geo11aug15n18-VI3g.tif mean =  0.7373602
-# geo11dec15n18-VI3g.tif mean =  0.65574145
-# geo11feb15n18-VI3g.tif mean =  0.69166535
-# geo11jan15n18-VI3g.tif mean =  0.7219649
-# geo11jul15n18-VI3g.tif mean =  0.6671518
-# geo11jun15n18-VI3g.tif mean =  0.6638234
-# geo11mar15n18-VI3g.tif mean =  0.7320422
-# geo11may15n18-VI3g.tif mean =  0.6122368
-# geo11nov15n18-VI3g.tif mean =  0.73988754
-# geo11oct15n18-VI3g.tif mean =  0.67638505
-# geo11sep15n18-VI3g.tif mean =  0.69807655
-# geo12apr15n19-VI3g.tif mean =  0.67287177
-# geo12aug15n19-VI3g.tif mean =  0.71811455
-# geo12dec15n19-VI3g.tif mean =  0.7279763
-# geo12feb15n19-VI3g.tif mean =  0.67020506
-# geo12jan15n19-VI3g.tif mean =  0.67605984
-# geo12jul15n19-VI3g.tif mean =  0.7084194
-# geo12jun15n19-VI3g.tif mean =  0.6696384
-# geo12mar15n19-VI3g.tif mean =  0.7050312
-# geo12may15n19-VI3g.tif mean =  0.6230402
-# geo12nov15n19-VI3g.tif mean =  0.7069492
-# geo12oct15n19-VI3g.tif mean =  0.7591348
-# geo12sep15n19-VI3g.tif mean =  0.7271976
-# geo13apr15n19-VI3g.tif mean =  0.60550594
-# geo13aug15n19-VI3g.tif mean =  0.7286441
-# geo13dec15n19-VI3g.tif mean =  0.67045796
-# geo13feb15n19-VI3g.tif mean =  0.69709206
-# geo13jan15n19-VI3g.tif mean =  0.65496814
-# geo13jul15n19-VI3g.tif mean =  0.7044994
-# geo13jun15n19-VI3g.tif mean =  0.65118283
-# geo13mar15n19-VI3g.tif mean =  0.69340533
-# geo13may15n19-VI3g.tif mean =  0.5773337
-# geo13nov15n19-VI3g.tif mean =  0.74572635
-# geo13oct15n19-VI3g.tif mean =  0.72540116
-# geo13sep15n19-VI3g.tif mean =  0.6764757
-# geo81aug15n07-VI3g.tif mean =  0.6998208
-# geo81dec15n07-VI3g.tif mean =  0.7079212
-# geo81jul15n07-VI3g.tif mean =  0.71922594
-# geo81nov15n07-VI3g.tif mean =  0.75302577
-# geo81oct15n07-VI3g.tif mean =  0.74832225
-# geo81sep15n07-VI3g.tif mean =  0.68726045
-# geo82apr15n07-VI3g.tif mean =  0.6080324
-# geo82aug15n07-VI3g.tif mean =  0.69269025
-# geo82dec15n07-VI3g.tif mean =  0.68081105
-# geo82feb15n07-VI3g.tif mean =  0.7167861
-# geo82jan15n07-VI3g.tif mean =  0.7280618
-# geo82jul15n07-VI3g.tif mean =  0.6931694
-# geo82jun15n07-VI3g.tif mean =  0.6587714
-# geo82mar15n07-VI3g.tif mean =  0.72378105
-# geo82may15n07-VI3g.tif mean =  0.5376445
-# geo82nov15n07-VI3g.tif mean =  0.7300059
-# geo82oct15n07-VI3g.tif mean =  0.71134853
-# geo82sep15n07-VI3g.tif mean =  0.63565797
-# geo83apr15n07-VI3g.tif mean =  0.61527205
-# geo83aug15n07-VI3g.tif mean =  0.7028284
-# geo83dec15n07-VI3g.tif mean =  0.74380594
-# geo83feb15n07-VI3g.tif mean =  0.67098814
-# geo83jan15n07-VI3g.tif mean =  0.65922266
-# geo83jul15n07-VI3g.tif mean =  0.6536751
-# geo83jun15n07-VI3g.tif mean =  0.6277251
-# geo83mar15n07-VI3g.tif mean =  0.7220659
-# geo83may15n07-VI3g.tif mean =  0.5767806
-# geo83nov15n07-VI3g.tif mean =  0.69664717
-# geo83oct15n07-VI3g.tif mean =  0.71600246
-# geo83sep15n07-VI3g.tif mean =  0.6719647
-# geo84apr15n07-VI3g.tif mean =  0.6644008
-# geo84aug15n07-VI3g.tif mean =  0.7025229
-# geo84dec15n07-VI3g.tif mean =  0.6803959
-# geo84feb15n07-VI3g.tif mean =  0.5356206
-# geo84jan15n07-VI3g.tif mean =  0.6641594
-# geo84jul15n07-VI3g.tif mean =  0.6525888
-# geo84jun15n07-VI3g.tif mean =  0.6419747
-# geo84mar15n07-VI3g.tif mean =  0.6530667
-# geo84may15n07-VI3g.tif mean =  0.5480951
-# geo84nov15n07-VI3g.tif mean =  0.6996238
-# geo84oct15n07-VI3g.tif mean =  0.74076045
-# geo84sep15n07-VI3g.tif mean =  0.63306713
-# geo85apr15n09-VI3g.tif mean =  0.6609043
-# geo85aug15n09-VI3g.tif mean =  0.7076904
-# geo85dec15n09-VI3g.tif mean =  0.67063385
-# geo85feb15n07-VI3g.tif mean =  0.714919
-# geo85jan15n07-VI3g.tif mean =  0.71472037
-# geo85jul15n09-VI3g.tif mean =  0.706869
-# geo85jun15n09-VI3g.tif mean =  0.6714118
-# geo85mar15n09-VI3g.tif mean =  0.67587733
-# geo85may15n09-VI3g.tif mean =  0.61309385
-# geo85nov15n09-VI3g.tif mean =  0.7308002
-# geo85oct15n09-VI3g.tif mean =  0.7473024
-# geo85sep15n09-VI3g.tif mean =  0.70570064
-# geo86apr15n09-VI3g.tif mean =  0.6595492
-# geo86aug15n09-VI3g.tif mean =  0.7127631
-# geo86dec15n09-VI3g.tif mean =  0.7151169
-# geo86feb15n09-VI3g.tif mean =  0.74336016
-# geo86jan15n09-VI3g.tif mean =  0.7184188
-# geo86jul15n09-VI3g.tif mean =  0.7170237
-# geo86jun15n09-VI3g.tif mean =  0.67120284
-# geo86mar15n09-VI3g.tif mean =  0.70302856
-# geo86may15n09-VI3g.tif mean =  0.5684659
-# geo86nov15n09-VI3g.tif mean =  0.7687833
-# geo86oct15n09-VI3g.tif mean =  0.7623449
-# geo86sep15n09-VI3g.tif mean =  0.67703736
-# geo87apr15n09-VI3g.tif mean =  0.5763355
-# geo87aug15n09-VI3g.tif mean =  0.7148873
-# geo87dec15n09-VI3g.tif mean =  0.70942634
-# geo87feb15n09-VI3g.tif mean =  0.70753855
-# geo87jan15n09-VI3g.tif mean =  0.73131406
-# geo87jul15n09-VI3g.tif mean =  0.6959565
-# geo87jun15n09-VI3g.tif mean =  0.5961696
-# geo87mar15n09-VI3g.tif mean =  0.69366753
-# geo87may15n09-VI3g.tif mean =  0.53060144
-# geo87nov15n09-VI3g.tif mean =  0.72481227
-# geo87oct15n09-VI3g.tif mean =  0.66970694
-# geo87sep15n09-VI3g.tif mean =  0.65431386
-# geo88apr15n09-VI3g.tif mean =  0.6257517
-# geo88aug15n09-VI3g.tif mean =  0.65685016
-# geo88dec15n11-VI3g.tif mean =  0.7463365
-# geo88feb15n09-VI3g.tif mean =  0.7251602
-# geo88jan15n09-VI3g.tif mean =  0.64066875
-# geo88jul15n09-VI3g.tif mean =  0.69887656
-# geo88jun15n09-VI3g.tif mean =  0.62478995
-# geo88mar15n09-VI3g.tif mean =  0.70197856
-# geo88may15n09-VI3g.tif mean =  0.599232
-# geo88nov15n11-VI3g.tif mean =  0.775108
-# geo88oct15n09-VI3g.tif mean =  0.6562421
-# geo88sep15n09-VI3g.tif mean =  0.64975226
-# geo89apr15n11-VI3g.tif mean =  0.6580836
-# geo89aug15n11-VI3g.tif mean =  0.7457508
-# geo89dec15n11-VI3g.tif mean =  0.77422655
-# geo89feb15n11-VI3g.tif mean =  0.7404998
-# geo89jan15n11-VI3g.tif mean =  0.7151916
-# geo89jul15n11-VI3g.tif mean =  0.72428125
-# geo89jun15n11-VI3g.tif mean =  0.6675959
-# geo89mar15n11-VI3g.tif mean =  0.708101
-# geo89may15n11-VI3g.tif mean =  0.6629531
-# geo89nov15n11-VI3g.tif mean =  0.74505734
-# geo89oct15n11-VI3g.tif mean =  0.74694717
-# geo89sep15n11-VI3g.tif mean =  0.655126
-# geo90apr15n11-VI3g.tif mean =  0.6996035
-# geo90aug15n11-VI3g.tif mean =  0.742589
-# geo90dec15n11-VI3g.tif mean =  0.74149734
-# geo90feb15n11-VI3g.tif mean =  0.7484763
-# geo90jan15n11-VI3g.tif mean =  0.7319312
-# geo90jul15n11-VI3g.tif mean =  0.73024225
-# geo90jun15n11-VI3g.tif mean =  0.70051897
-# geo90mar15n11-VI3g.tif mean =  0.7202239
-# geo90may15n11-VI3g.tif mean =  0.6640162
-# geo90nov15n11-VI3g.tif mean =  0.75657064
-# geo90oct15n11-VI3g.tif mean =  0.7698118
-# geo90sep15n11-VI3g.tif mean =  0.7182096
-# geo91apr15n11-VI3g.tif mean =  0.64130044
-# geo91aug15n11-VI3g.tif mean =  0.69412935
-# geo91dec15n11-VI3g.tif mean =  0.68455863
-# geo91feb15n11-VI3g.tif mean =  0.73942345
-# geo91jan15n11-VI3g.tif mean =  0.7562463
-# geo91jul15n11-VI3g.tif mean =  0.7128476
-# geo91jun15n11-VI3g.tif mean =  0.70607823
-# geo91mar15n11-VI3g.tif mean =  0.7368624
-# geo91may15n11-VI3g.tif mean =  0.62823695
-# geo91nov15n11-VI3g.tif mean =  0.7163497
-# geo91oct15n11-VI3g.tif mean =  0.70876575
-# geo91sep15n11-VI3g.tif mean =  0.66318
-# geo92apr15n11-VI3g.tif mean =  0.68597466
-# geo92aug15n11-VI3g.tif mean =  0.7310949
-# geo92dec15n11-VI3g.tif mean =  0.6840994
-# geo92feb15n11-VI3g.tif mean =  0.6970757
-# geo92jan15n11-VI3g.tif mean =  0.68972933
-# geo92jul15n11-VI3g.tif mean =  0.7038843
-# geo92jun15n11-VI3g.tif mean =  0.63687366
-# geo92mar15n11-VI3g.tif mean =  0.7083122
-# geo92may15n11-VI3g.tif mean =  0.5795541
-# geo92nov15n11-VI3g.tif mean =  0.7266445
-# geo92oct15n11-VI3g.tif mean =  0.7209249
-# geo92sep15n11-VI3g.tif mean =  0.6971335
-# geo93apr15n11-VI3g.tif mean =  0.62202775
-# geo93aug15n11-VI3g.tif mean =  0.66035956
-# geo93dec15n11-VI3g.tif mean =  0.69380736
-# geo93feb15n11-VI3g.tif mean =  0.7277623
-# geo93jan15n11-VI3g.tif mean =  0.721683
-# geo93jul15n11-VI3g.tif mean =  0.6629651
-# geo93jun15n11-VI3g.tif mean =  0.63229406
-# geo93mar15n11-VI3g.tif mean =  0.6713049
-# geo93may15n11-VI3g.tif mean =  0.5918375
-# geo93nov15n11-VI3g.tif mean =  0.681449
-# geo93oct15n11-VI3g.tif mean =  0.6937688
-# geo93sep15n11-VI3g.tif mean =  0.67767954
-# geo94apr15n11-VI3g.tif mean =  0.6126371
-# geo94aug15n11-VI3g.tif mean =  0.68621975
-# geo94dec15n09-VI3g.tif mean =  0.7564694
-# geo94feb15n11-VI3g.tif mean =  0.67859125
-# geo94jan15n11-VI3g.tif mean =  0.6993771
-# geo94jul15n11-VI3g.tif mean =  0.6847661
-# geo94jun15n11-VI3g.tif mean =  0.6741529
-# geo94mar15n11-VI3g.tif mean =  0.6701561
-# geo94may15n11-VI3g.tif mean =  0.5301694
-# geo94nov15n09-VI3g.tif mean =  0.779311
-# geo94oct15n09-VI3g.tif mean =  0.81208915
-# geo94sep15n09-VI3g.tif mean =  0.67330974
-# geo95apr15n14-VI3g.tif mean =  0.6590322
-# geo95aug15n14-VI3g.tif mean =  0.7333124
-# geo95dec15n14-VI3g.tif mean =  0.72600484
-# geo95feb15n14-VI3g.tif mean =  0.74628913
-# crap what happened here?
-# geo95jan15a.n09-VI3g.tif
-# geo95jan15b.n14-VI3g.tif
-# geo95jan15n09-VI3g.tif mean =  0.7555114
-# geo95jul15n14-VI3g.tif mean =  0.72802263
-# geo95jun15n14-VI3g.tif mean =  0.68133324
-# geo95mar15n14-VI3g.tif mean =  0.69517857
-# geo95may15n14-VI3g.tif mean =  0.6559569
-# geo95nov15n14-VI3g.tif mean =  0.75054616
-# geo95oct15n14-VI3g.tif mean =  0.71571
-# geo95sep15n14-VI3g.tif mean =  0.6765598
-# geo96apr15n14-VI3g.tif mean =  0.6137829
-# geo96aug15n14-VI3g.tif mean =  0.7308173
-# geo96dec15n14-VI3g.tif mean =  0.73422086
-# geo96feb15n14-VI3g.tif mean =  0.7490112
-# geo96jan15n14-VI3g.tif mean =  0.77117693
-# geo96jul15n14-VI3g.tif mean =  0.7169651
-# geo96jun15n14-VI3g.tif mean =  0.7060329
-# geo96mar15n14-VI3g.tif mean =  0.7263206
-# geo96may15n14-VI3g.tif mean =  0.6596779
-# geo96nov15n14-VI3g.tif mean =  0.78154445
-# geo96oct15n14-VI3g.tif mean =  0.7539433
-# geo96sep15n14-VI3g.tif mean =  0.7345794
-# geo97apr15n14-VI3g.tif mean =  0.6537165
-# geo97aug15n14-VI3g.tif mean =  0.73443466
-# geo97dec15n14-VI3g.tif mean =  0.75472116
-# geo97feb15n14-VI3g.tif mean =  0.7269492
-# geo97jan15n14-VI3g.tif mean =  0.7273447
-# geo97jul15n14-VI3g.tif mean =  0.71983653
-# geo97jun15n14-VI3g.tif mean =  0.6781286
-# geo97mar15n14-VI3g.tif mean =  0.7014298
-# geo97may15n14-VI3g.tif mean =  0.62868506
-# geo97nov15n14-VI3g.tif mean =  0.68187594
-# geo97oct15n14-VI3g.tif mean =  0.77925104
-# geo97sep15n14-VI3g.tif mean =  0.72563654
-# geo98apr15n14-VI3g.tif mean =  0.58168757
-# geo98aug15n14-VI3g.tif mean =  0.7356271
-# geo98dec15n14-VI3g.tif mean =  0.7504796
-# geo98feb15n14-VI3g.tif mean =  0.7538251
-# geo98jan15n14-VI3g.tif mean =  0.7537859
-# geo98jul15n14-VI3g.tif mean =  0.6908825
-# geo98jun15n14-VI3g.tif mean =  0.6509559
-# geo98mar15n14-VI3g.tif mean =  0.68742144
-# geo98may15n14-VI3g.tif mean =  0.5506525
-# geo98nov15n14-VI3g.tif mean =  0.6986159
-# geo98oct15n14-VI3g.tif mean =  0.68919754
-# geo98sep15n14-VI3g.tif mean =  0.7063731
-# geo99apr15n14-VI3g.tif mean =  0.68002653
-# geo99aug15n14-VI3g.tif mean =  0.7156094
-# geo99dec15n14-VI3g.tif mean =  0.68668956
-# geo99feb15n14-VI3g.tif mean =  0.68690103
-# geo99jan15n14-VI3g.tif mean =  0.7094098
-# geo99jul15n14-VI3g.tif mean =  0.7056516
-# geo99jun15n14-VI3g.tif mean =  0.5922255
-# geo99mar15n14-VI3g.tif mean =  0.6745953
-# geo99may15n14-VI3g.tif mean =  0.5835992
-# geo99nov15n14-VI3g.tif mean =  0.66248614
-# geo99oct15n14-VI3g.tif mean =  0.65924853
-# geo99sep15n14-VI3g.tif mean =  0.6302115
+    #     Shanes-MacBook-Pro-6:tifavg mm_shane$ python combineparts.py
+    # combineparts.py:41: RuntimeWarning: overflow encountered in add
+    #   combine = (a_data + b_data) / 2 # average the entire month
+    # ERROR 4: Attempt to create new tiff file `/Users/mm_shane/arcgis/tifavg/output/geo00apr15n14-VI3g.tif' failed: No such file or directory
+    # Traceback (most recent call last):
+    #   File "combineparts.py", line 61, in <module>
+    #     dataset.GetRasterBand(1).WriteArray(combine)
+    # AttributeError: 'NoneType' object has no attribute 'GetRasterBand'
+
+
+#
