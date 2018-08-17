@@ -4,6 +4,7 @@ import numpy as np
 from glob import glob
 import os
 import gdal
+import scipy.misc
 
 data_dir = '/Users/mm_shane/Downloads/data/'
 file_list = sorted(os.listdir(data_dir))
@@ -45,6 +46,9 @@ for x in groups:
 
     newname = x[0].replace("a.", "")
 
+    im2 = Image.fromarray(combine)
+    im2.save(newname)
+
     # sanity check
     if x[1].replace("b.", "") != newname:
         print('crap what happened here?')
@@ -53,12 +57,12 @@ for x in groups:
 
     # doesn't work
     # from: https://stackoverflow.com/questions/37648439/simplest-way-to-save-array-into-raster-file-in-python
-    dst_filename = "/Users/mm_shane/arcgis/tifavg/output/" + newname
-    x_pixels = combine.shape[0]  # number of pixels in x
-    y_pixels = combine.shape[1]  # number of pixels in y
-    driver = gdal.GetDriverByName('GTiff')
-    dataset = driver.Create(dst_filename, x_pixels, y_pixels, 1, gdal.GDT_Float32)
-    dataset.GetRasterBand(1).WriteArray(combine)
+    # dst_filename = "/Users/mm_shane/arcgis/tifavg/output/" + newname
+    # x_pixels = combine.shape[0]  # number of pixels in x
+    # y_pixels = combine.shape[1]  # number of pixels in y
+    # driver = gdal.GetDriverByName('GTiff')
+    # dataset = driver.Create(dst_filename, x_pixels, y_pixels, 1, gdal.GDT_Float32)
+    # dataset.GetRasterBand(1).WriteArray(combine)
 
     #     Shanes-MacBook-Pro-6:tifavg mm_shane$ python combineparts.py
     # combineparts.py:41: RuntimeWarning: overflow encountered in add
