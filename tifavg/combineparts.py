@@ -1,6 +1,3 @@
-# Directions
-# pip install rasterio
-
 from PIL import Image
 import numpy as np
 from glob import glob
